@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Hex Auto-Sync Patcher — Dán là vá ngay</title>
+<style>
+  *{box-sizing:border-box}
+  body{
+    margin:0;padding:22px;
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    background:radial-gradient(1200px 600px at 50% -220px,#1b2430,#0b0e12 60%);
+    color:#e6edf3;min-height:100vh;
+  }
+  .wrap{max-width:1200px;margin:0 auto}
+  h1{font-size:20px;margin:0 0 4px}
+  .sub{color:#8b98a5;font-size:13px;margin:0 0 18px}
+  .sub b{color:#7dd3a0}
+  .grid{display:grid;grid-template-columns:1.05fr .95fr;gap:14px;align-items:start}
+  .col{display:flex;flex-direction:column;gap:14px;min-width:0}
+  @media(max-width:900px){.grid{grid-template-columns:1fr}}
+  .card{background:#151a21;border:1px solid #242b34;border-radius:12px;padding:14px;min-width:0}
+  .card h2{font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:#8b98a5;margin:0 0 11px;font-weight:700;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+  .card h2 .tag{font-size:10px;letter-spacing:.03em;background:#1d2530;border:1px solid #2c3542;color:#9fb0c0;padding:2px 7px;border-radius:99px;text-transform:none}
+  .tag.live{background:#0f2418;border-color:#1f5138;color:#6ee7a5;animation:pulse 1.8s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.55}}
+  label.lbl{display:block;font-size:12px;color:#8b98a5;margin:0 0 5px}
+  input[type=text],textarea{
+    width:100%;background:#0d1117;border:1px solid #2a323d;border-radius:8px;
+    color:#e6edf3;padding:9px 10px;font-family:ui-monospace,Consolas,monospace;
+    font-size:13px;outline:none;transition:.15s;
+  }
+  textarea:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.15)}
+  textarea{resize:vertical;min-height:170px;line-height:1.6}
+  .hint{font-size:12px;color:#8b98a5;margin-top:7px;line-height:1.55}
+  .hint code{background:#1d2530;padding:1px 5px;border-radius:4px;color:#9ecbff;font-size:11.5px}
+  button{
+    background:#222a34;border:1px solid #303a46;color:#e6edf3;padding:9px 14px;border-radius:8px;
+    font-size:13px;font-weight:600;cursor:pointer;transition:.15s;
+  }
+  button:hover:not(:disabled){background:#2b3540}
+  button:disabled{opacity:.4;cursor:not-allowed}
+  button.green{background:#16a34a;border-color:#16a34a;color:#fff}
+  button.green:hover:not(:disabled){background:#128a3e}
+  button.ghost{background:transparent}
+  .row{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+  .mt{margin-top:12px}
+  .dropzone{
+    display:block;border:2px dashed #2e3846;border-radius:10px;padding:16px;text-align:center;
+    cursor:pointer;transition:.15s;background:#0f141a;
+  }
+  .dropzone:hover,.dropzone.over{border-color:#3b82f6;background:#101a26}
+  .dropzone .big{font-size:14px;margin-bottom:5px}
+  .link{color:#60a5fa;text-decoration:underline}
+  .dim{color:#8b98a5;font-size:12px;font-family:ui-monospace,monospace}
+  #summary{font-size:12.5px;color:#a9b6c4;font-family:ui-monospace,monospace}
+  #summary .e{color:#f87171}
+  #parsedWrap{max-height:290px;overflow:auto;margin-top:10px;border:1px solid #1e252e;border-radius:8px}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th{position:sticky;top:0;background:#171e26;text-align:left;color:#8b98a5;font-size:10.5px;
+     text-transform:uppercase;letter-spacing:.06em;padding:7px 9px;border-bottom:1px solid #242b34;font-weight:700;z-index:1}
+  td{padding:6px 9px;border-bottom:1px solid #1b222b;vertical-align:top}
+  tr[data-off]{cursor:pointer}
+  tr[data-off]:hover{background:#171e26}
+  .mono{font-family:ui-monospace,Consolas,monospace;word-break:break-word}
+  .c-line{color:#6b7787;width:38px}
+  .c-len{color:#8b98a5;width:48px;text-align:right}
+  .r-ok td:last-child{color:#4ade80}
+  .r-warn td:last-child{color:#fbbf24}
+  .r-err{background:rgba(248,113,113,.06)}
+  .r-err td{color:#f87171}
+  #dump{
+    font-family:ui-monospace,Consolas,monospace;font-size:12px;line-height:1.75;
+    max-height:330px;overflow:auto;background:#0d1117;border:1px solid #242b34;
+    border-radius:8px;padding:10px;
+  }
+  .drow{display:flex;gap:14px;white-space:pre}
+  .addr{color:#7c8899;flex:0 0 auto}
+  .hex{color:#c9d5e1;white-space:pre}
+  .asc{color:#5f6b7a;white-space:pre}
+  .hl{background:#2563eb;color:#fff;border-radius:2px}
+  #log{max-height:150px;overflow:auto;font-family:ui-monospace,monospace;font-size:12px;line-height:1.65}
+  .logline{color:#a9b6c4;white-space:pre-wrap;word-break:break-word}
+  .logline.ok{color:#4ade80}
+  .logline.warn{color:#fbbf24}
+  .logline.err{color:#f87171}
+  .syncbar{
+    display:flex;align-items:center;gap:9px;background:#0f1a14;border:1px solid #1f5138;
+    border-radius:8px;padding:8px 12px;font-family:ui-monospace,monospace;font-size:12px;color:#6ee7a5;
+  }
+  .syncbar.idle{background:#141a22;border-color:#2a323d;color:#8b98a5}
+  .syncbar .dot{width:8px;height:8px;border-radius:50%;background:currentColor;flex:0 0 auto;animation:pulse 1.4s infinite}
+  .syncbar.idle .dot{animation:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🩹 Hex Auto-Sync Patcher</h1>
+  <p class="sub">Nạp file → dán <b>offset + hex</b> (hoặc <b>hex =&gt; hex</b>) → <b>file tự động được vá ngay</b>. Không cần bấm nút.</p>
+
+  <div class="grid">
+    <!-- ================= CỘT TRÁI ================= -->
+    <div class="col">
+
+      <div class="card">
+        <h2>1 · File nguồn <span class="tag" id="filetag">chưa nạp</span></h2>
+        <label class="dropzone" id="drop">
+          <input type="file" id="file" hidden>
+          <div class="big">📁 Kéo &amp; thả file vào đây, hoặc <span class="link">chọn file</span></div>
+          <div class="dim" id="finfo">Chưa nạp file</div>
+        </label>
+      </div>
+
+      <div class="card">
+        <h2>2 · Dán Offset + Hex <span class="tag live" id="livetag" style="display:none">● đang đồng bộ</span></h2>
+        <textarea id="patch" spellcheck="false" placeholder="0x1A2B DE AD BE EF
+00001A2B: DE AD BE EF 00 01 02 03
+1A2B - DE AD BE EF
+00001A2B  DE AD BE EF 00 01 02 03   |....|
+DE AD BE EF => 00 00 00 00"></textarea>
+        <div class="hint">
+          Mỗi dòng một lệnh — <b>dán vào là file tự cập nhật</b>. Hỗ trợ:
+          <code>0x1A2B DE AD</code> · <code>1A2B: DE AD</code> · <code>1A2B - DE AD</code> ·
+          <code>00001A2B&nbsp;&nbsp;DE AD BE EF&nbsp;&nbsp;|ascii|</code><br>
+          Dạng <code>HEX_TÌM =&gt; HEX_THAY</code> sẽ <b>quét toàn file</b> và thay mọi vị trí khớp.
+          Patch trực tiếp chạy trước, sau đó quy tắc thay thế quét trên kết quả.
+        </div>
+        <div class="row mt">
+          <button id="reset">↺ Hoàn tác file gốc</button>
+          <button id="clear" class="ghost">🗑 Xoá nội dung</button>
+          <button id="download" class="green" disabled style="margin-left:auto">⬇ Tải xuống</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>3 · Đã phân tích <span class="tag" id="parseTag">0 dòng</span></h2>
+        <div id="summary">Chưa có dữ liệu vá</div>
+        <div id="parsedWrap">
+          <table>
+            <thead><tr><th>Dòng</th><th>Nội dung</th><th class="c-len">Dài</th><th>Trạng thái</th></tr></thead>
+            <tbody id="parsed">
+              <tr><td colspan="4" class="dim" style="padding:12px">Chưa có dòng nào</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ================= CỘT PHẢI ================= -->
+    <div class="col">
+
+      <div class="card">
+        <h2>4 · Trạng thái đồng bộ</h2>
+        <div class="syncbar idle" id="syncbar">
+          <span class="dot"></span>
+          <span id="synctext">Chờ dữ liệu…</span>
+        </div>
+        <div class="hint">Mọi thay đổi trong ô dán được áp dụng <b>ngay lập tức</b> vào bản sao file (không ảnh hưởng file gốc). Bấm “Tải xuống” để lưu.</div>
+      </div>
+
+      <div class="card">
+        <h2>5 · Xem trước vùng dữ liệu</h2>
+        <div id="dump"><span class="dim">Chưa nạp file</span></div>
+        <div class="hint">Bấm vào một dòng trong bảng “Đã phân tích” để nhảy tới vị trí đó.</div>
+      </div>
+
+      <div class="card">
+        <h2>6 · Nhật ký</h2>
+        <div id="log"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+"use strict";
+
+const $ = s => document.querySelector(s);
+const els = {
+  file: $('#file'), drop: $('#drop'), finfo: $('#finfo'),
+  filetag: $('#filetag'), livetag: $('#livetag'),
+  patch: $('#patch'), summary: $('#summary'), parsed: $('#parsed'), parseTag: $('#parseTag'),
+  reset: $('#reset'), clear: $('#clear'), download: $('#download'),
+  dump: $('#dump'), log: $('#log'),
+  syncbar: $('#syncbar'), synctext: $('#synctext')
+};
+
+let original = null;      // Uint8Array gốc
+let working  = null;      // Uint8Array sau khi vá
+let fileName = 'file.bin';
+let parsed   = { patches: [], replaces: [], errors: [] };
+let ranges   = [];        // các vùng đã vá: {offset, len}
+let focusOffset = null;
+let timer = null;
+let lastSyncLogAt = 0;
+
+const fmt  = n => '0x' + n.toString(16).toUpperCase();
+const hex2 = b => b.toString(16).toUpperCase().padStart(2, '0');
+const esc  = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ---------------- PARSE ---------------- */
+
+function parseHex(str) {
+  if (str == null) return null;
+  let s = String(str)
+    .replace(/\\x/gi, '')
+    .replace(/0x/gi, '')
+    .replace(/[\s,;:\-_.|]/g, '');
+  if (s === '') return new Uint8Array(0);
+  if (!/^[0-9a-fA-F]+$/.test(s)) return null;
+  if (s.length % 2 !== 0) return null;
+  const out = new Uint8Array(s.length / 2);
+  for (let i = 0; i < out.length; i++) out[i] = parseInt(s.substr(i * 2, 2), 16);
+  return out;
+}
+
+function parseInput(text) {
+  const patches = [], replaces = [], errors = [];
+  String(text).split(/\r?\n/).forEach((raw, i) => {
+    const lineNo = i + 1;
+    let line = raw.trim();
+    if (!line) return;
+    line = line.replace(/;.*$/, '').replace(/\/\/.*$/, '').trim();
+    if (!line) return;
+
+    /* --- dạng  HEX_TÌM => HEX_THAY --- */
+    const arrow = line.match(/^(.*?)\s*(?:=>|->)\s*(.*)$/);
+    if (arrow) {
+      const findB = parseHex(arrow[1]);
+      const repB  = parseHex(arrow[2]);
+      if (!findB || !findB.length) { errors.push({ lineNo, raw, msg: 'Hex tìm không hợp lệ' }); return; }
+      if (!repB  || !repB.length)  { errors.push({ lineNo, raw, msg: 'Hex thay thế không hợp lệ' }); return; }
+      if (findB.length !== repB.length) {
+        errors.push({ lineNo, raw, msg: `Độ dài lệch (${findB.length} vs ${repB.length})` }); return;
+      }
+      replaces.push({ lineNo, raw, find: findB, rep: repB, matches: 0 });
+      return;
+    }
+
+    /* --- bỏ cột ASCII của hex dump --- */
+    const bar = line.indexOf('|');
+    if (bar >= 0) line = line.slice(0, bar).trim();
+
+    /* --- OFFSET + HEX --- */
+    let explicit = true;
+    let m = line.match(/^(?:0x|\$)?([0-9a-fA-F]+)\s*[:=\-]\s*(.*)$/);
+    if (!m) {
+      explicit = false;
+      m = line.match(/^(?:0x|\$)?([0-9a-fA-F]+)\s+(.*)$/);
+    }
+    if (!m) { errors.push({ lineNo, raw, msg: 'Không nhận ra địa chỉ / định dạng' }); return; }
+
+    const addrStr = m[1];
+    const bytes   = parseHex(m[2]);
+    if (!bytes)      { errors.push({ lineNo, raw, msg: 'Hex không hợp lệ (cần số ký tự hex chẵn)' }); return; }
+    if (!bytes.length){ errors.push({ lineNo, raw, msg: 'Thiếu dữ liệu hex' }); return; }
+
+    const offset = parseInt(addrStr, 16);
+    const warn = (!explicit && !/^0x|\$/i.test(line) && addrStr.length <= 2)
+      ? 'Địa chỉ rất ngắn — kiểm tra lại' : null;
+
+    patches.push({ lineNo, raw, offset, bytes, warn, error: null });
+  });
+  return { patches, replaces, errors };
+}
+
+/* ---------------- TIỆN ÍCH ---------------- */
+
+function findAll(hay, needle) {
+  const res = [];
+  const n = needle.length, last = hay.length - n;
+  if (!n || last < 0) return res;
+  const first = needle[0];
+  for (let i = 0; i <= last; i++) {
+    if (hay[i] !== first) continue;
+    let j = 1;
+    while (j < n && hay[i + j] === needle[j]) j++;
+    if (j === n) { res.push(i); if (res.length >= 5000) break; }
+  }
+  return res;
+}
+
+function asciiOf(b) {
+  return (b >= 32 && b < 127)
+    ? String.fromCharCode(b).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    : '.';
+}
+
+function hexPreview(bytes, max = 20) {
+  const s = Array.from(bytes.slice(0, max), hex2).join(' ');
+  return bytes.length > max ? s + ' …' : s;
+}
+
+function addLog(msg, cls) {
+  const d = document.createElement('div');
+  d.className = 'logline ' + (cls || '');
+  d.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg;
+  els.log.prepend(d);
+  while (els.log.children.length > 100) els.log.lastChild.remove();
+}
+
+function setSyncBadge(state, text) {
+  if (state === 'live') {
+    els.syncbar.className = 'syncbar';
+    els.synctext.textContent = text;
+    els.livetag.style.display = '';
+    els.livetag.textContent = '● đang đồng bộ';
+  } else if (state === 'done') {
+    els.syncbar.className = 'syncbar';
+    els.synctext.textContent = text;
+    els.livetag.style.display = 'none';
+  } else {
+    els.syncbar.className = 'syncbar idle';
+    els.synctext.textContent = text;
+    els.livetag.style.display = 'none';
+  }
+}
+
+/* ---------------- ĐỒNG BỘ (TỰ ĐỘNG) ---------------- */
+
+function sync(doLog) {
+  parsed = parseInput(els.patch.value);
+  ranges = [];
+
+  let okP = 0, okB = 0, okR = 0, okM = 0;
+
+  if (original) {
+    working = original.slice();
+
+    // 1) patch trực tiếp — áp ngay vào file
+    parsed.patches.forEach(p => {
+      if (p.offset + p.bytes.length > working.length) {
+        p.error = `Vượt kích thước file (${working.length} byte)`;
+        return;
+      }
+      working.set(p.bytes, p.offset);
+      ranges.push({ offset: p.offset, len: p.bytes.length });
+      okP++; okB += p.bytes.length;
+    });
+
+    // 2) quét & thay thế trên kết quả vừa vá
+    parsed.replaces.forEach(r => {
+      const found = findAll(working, r.find);
+      r.matches = found.length;
+      if (!found.length) return;
+      found.forEach(o => {
+        working.set(r.rep, o);
+        ranges.push({ offset: o, len: r.rep.length });
+      });
+      okR++; okM += found.length;
+    });
+
+    ranges.sort((a, b) => a.offset - b.offset);
+  } else {
+    working = null;
+    parsed.patches.forEach(p => { okP++; okB += p.bytes.length; });
+    parsed.replaces.forEach(r => { okR++; });
+  }
+
+  // render
+  renderTable();
+  renderSummary(okP, okB, okR, okM);
+  renderDump();
+
+  // badge + log
+  const totalLines = parsed.patches.length + parsed.replaces.length;
+  if (!els.patch.value.trim()) {
+    setSyncBadge(original ? 'done' : 'idle',
+      original ? 'Sẵn sàng — chờ dán dữ liệu vá' : 'Chờ nạp file & dán dữ liệu…');
+  } else if (!original) {
+    setSyncBadge('idle', totalLines + ' dòng đã phân tích — cần nạp file để vá');
+  } else {
+    const bits = [];
+    if (okP) bits.push(okP + ' patch (' + okB + ' byte)');
+    if (okR) bits.push(okR + ' quy tắc → ' + okM + ' vị trí');
+    if (parsed.errors.length) bits.push(parsed.errors.length + ' dòng lỗi');
+    setSyncBadge(parsed.errors.length ? 'done' : 'live',
+      '✅ Đã đồng bộ vào file · ' + (bits.join(' · ') || 'không có thay đổi') +
+      ' · ' + new Date().toLocaleTimeString());
+  }
+
+  if (doLog) {
+    const now = Date.now();
+    if (now - lastSyncLogAt > 400) {
+      lastSyncLogAt = now;
+      if (!els.patch.value.trim()) {
+        addLog('Đã xoá nội dung vá', 'warn');
+      } else if (!original) {
+        addLog('Đã phân tích ' + totalLines + ' dòng — chưa nạp file', 'warn');
+      } else {
+        const bits = [];
+        if (okP) bits.push(okP + ' patch (' + okB + ' byte)');
+        if (okR) bits.push(okR + ' quy tắc thay thế → ' + okM + ' vị trí');
+        if (parsed.errors.length) bits.push(parsed.errors.length + ' dòng lỗi');
+        addLog('⚡ Tự động vá: ' + (bits.join(' · ') || 'không có thay đổi'),
+               parsed.errors.length ? 'warn' : 'ok');
+      }
+    }
+  }
+}
+
+/* ---------------- RENDER ---------------- */
+
+function renderSummary(p, b, r, m) {
+  const parts = [];
+  if (p) parts.push(`${p} patch · ${b} byte`);
+  if (r) parts.push(`${r} quy tắc · ${m} vị trí`);
+  if (parsed.errors.length) parts.push(`<span class="e">${parsed.errors.length} dòng lỗi</span>`);
+  els.summary.innerHTML = parts.length ? parts.join(' &nbsp;·&nbsp; ')
+                                       : '<span class="dim">Chưa có dữ liệu vá</span>';
+}
+
+function renderTable() {
+  const rows = [];
+  const total = parsed.patches.length + parsed.replaces.length + parsed.errors.length;
+  els.parseTag.textContent = total + ' dòng';
+
+  parsed.patches.forEach(p => {
+    const st = p.error ? 'r-err' : (p.warn ? 'r-warn' : 'r-ok');
+    const status = p.error ? '❌ ' + esc(p.error)
+                 : p.warn  ? '⚠ ' + esc(p.warn)
+                           : '✔ Đã vá vào file';
+    rows.push(`<tr class="${st}" data-off="${p.offset}">
+      <td class="c-line">${p.lineNo}</td>
+      <td class="mono">${fmt(p.offset)}: ${hexPreview(p.bytes)}</td>
+      <td class="c-len">${p.bytes.length}</td>
+      <td>${status}</td>
+    </tr>`);
+  });
+
+  parsed.replaces.forEach(r => {
+    let status, cls;
+    if (!original)      { status = '✔ Sẽ quét khi nạp file';        cls = 'r-ok';   }
+    else if (r.matches) { status = `✔ Đã thay ${r.matches} vị trí`;  cls = 'r-ok';   }
+    else                { status = '⚠ Không khớp mẫu nào';           cls = 'r-warn'; }
+    rows.push(`<tr class="${cls}">
+      <td class="c-line">${r.lineNo}</td>
+      <td class="mono">${hexPreview(r.find)} &nbsp;→&nbsp; ${hexPreview(r.rep)}</td>
+      <td class="c-len">${r.find.length}</td>
+      <td>${status}</td>
+    </tr>`);
+  });
+
+  parsed.errors.forEach(e => {
+    rows.push(`<tr class="r-err">
+      <td class="c-line">${e.lineNo}</td>
+      <td class="mono">${esc(e.raw)}</td>
+      <td class="c-len">—</td>
+      <td>❌ ${esc(e.msg)}</td>
+    </tr>`);
+  });
+
+  els.parsed.innerHTML = rows.length
+    ? rows.join('')
+    : '<tr><td colspan="4" class="dim" style="padding:12px">Chưa có dòng nào</td></tr>';
+
+  els.parsed.querySelectorAll('tr[data-off]').forEach(tr => {
+    tr.addEventListener('click', () => {
+      focusOffset = parseInt(tr.dataset.off, 10);
+      renderDump();
+    });
+  });
+}
+
+function renderDump() {
+  if (!working) {
+    els.dump.innerHTML = '<span class="dim">Chưa nạp file — bảng “Đã phân tích” cho biết dữ liệu sẽ được vá khi nạp file.</span>';
+    return;
+  }
+
+  const WIN = 512;
+  let center = focusOffset;
+  if (center == null || center < 0 || center >= working.length) {
+    center = ranges.length ? ranges[0].offset : 0;
+  }
+
+  let start = Math.max(0, center - 128);
+  start -= start % 16;
+  let end = Math.min(working.length, start + WIN);
+  end = Math.min(working.length, start + Math.ceil((end - start) / 16) * 16);
+
+  const vis = ranges.filter(r => r.offset < end && r.offset + r.len > start);
+  const isHL = a => vis.some(r => a >= r.offset && a < r.offset + r.len);
+
+  let html = '';
+  for (let row = start; row < end; row += 16) {
+    let hx = '', asc = '';
+    for (let i = 0; i < 16; i++) {
+      const a = row + i;
+      if (a >= working.length) { hx += '   '; asc += ' '; continue; }
+      const b = working[a], t = hex2(b), hl = isHL(a);
+      hx  += hl ? '<span class="hl">' + t + '</span> ' : t + ' ';
+      asc += hl ? '<span class="hl">' + asciiOf(b) + '</span>' : asciiOf(b);
+    }
+    html += '<div class="drow"><span class="addr">' +
+            row.toString(16).toUpperCase().padStart(8, '0') +
+            '</span><span class="hex">' + hx +
+            '</span><span class="asc">' + asc + '</span></div>';
+  }
+  els.dump.innerHTML = html;
+}
+
+/* ---------------- FILE ---------------- */
+
+async function loadFile(f) {
+  try {
+    const buf = await f.arrayBuffer();
+    original = new Uint8Array(buf);
+    working  = original.slice();
+    fileName = f.name || 'file.bin';
+    focusOffset = null;
+    els.download.disabled = false;
+    els.finfo.textContent = fileName + ' · ' + original.length.toLocaleString() + ' bytes';
+    els.filetag.textContent = original.length.toLocaleString() + ' bytes';
+    els.filetag.className = 'tag';
+    addLog('Đã nạp "' + fileName + '" — ' + original.length.toLocaleString() + ' bytes', 'ok');
+    // TỰ ĐỘNG vá ngay khi nạp file
+    sync(true);
+  } catch (e) {
+    addLog('Lỗi đọc file: ' + e.message, 'err');
+  }
+}
+
+els.file.addEventListener('change', e => {
+  if (e.target.files && e.target.files[0]) loadFile(e.target.files[0]);
+});
+['dragenter','dragover'].forEach(ev =>
+  els.drop.addEventListener(ev, e => { e.preventDefault(); els.drop.classList.add('over'); }));
+['dragleave','drop'].forEach(ev =>
+  els.drop.addEventListener(ev, e => { e.preventDefault(); els.drop.classList.remove('over'); }));
+els.drop.addEventListener('drop', e => {
+  const f = e.dataTransfer.files && e.dataTransfer.files[0];
+  if (f) loadFile(f);
+});
+
+/* ---------------- SỰ KIỆN — TỰ ĐỘNG ĐỒNG BỘ ---------------- */
+
+// Gõ phím: debounce 90ms cho mượt
+els.patch.addEventListener('input', () => {
+  clearTimeout(timer);
+  timer = setTimeout(() => sync(true), 90);
+});
+
+// Dán: áp dụng NGAY (0ms)
+els.patch.addEventListener('paste', () => {
+  clearTimeout(timer);
+  timer = setTimeout(() => sync(true), 0);
+});
+
+// Bắt mọi thay đổi khác (kéo thả text, autofill, v.v.)
+els.patch.addEventListener('drop', () => {
+  clearTimeout(timer);
+  timer = setTimeout(() => sync(true), 0);
+});
+
+els.reset.addEventListener('click', () => {
+  if (!original) return;
+  focusOffset = null;
+  els.download.disabled = false;
+  addLog('↺ Đã hoàn tác file — đang vá lại từ đầu', 'warn');
+  sync(true);
+});
+
+els.clear.addEventListener('click', () => {
+  els.patch.value = '';
+  focusOffset = null;
+  sync(true);
+});
+
+els.download.addEventListener('click', () => {
+  if (!working) { addLog('⚠ Chưa nạp file', 'warn'); return; }
+  const blob = new Blob([working], { type: 'application/octet-stream' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const dot = fileName.lastIndexOf('.');
+  a.download = dot > 0
+    ? fileName.slice(0, dot) + '_patched' + fileName.slice(dot)
+    : fileName + '_patched';
+  a.href = url;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
+  addLog('⬇ Đã tải xuống: ' + a.download + ' (' + working.length.toLocaleString() + ' bytes)', 'ok');
+});
+
+// khởi tạo
+setSyncBadge('idle', 'Chờ nạp file & dán dữ liệu…');
+renderDump();
+})();
+</script>
+</body>
+</html>

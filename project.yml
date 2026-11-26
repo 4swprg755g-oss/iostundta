@@ -1,0 +1,21 @@
+name: Dnoffset
+options:
+  bundleIdPrefix: com.mobile
+targets:
+  Dnoffset:
+    type: application
+    platform: iOS
+    deploymentTarget: "14.0"
+    sources:
+      - Sources
+    resources:
+      - Resources
+    info:
+      path: Info.plist
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.tun.gay
+        PRODUCT_NAME: Dnoffset
+        CODE_SIGNING_ALLOWED: "NO"
+        CODE_SIGNING_REQUIRED: "NO"
+        CODE_SIGN_IDENTITY: ""
